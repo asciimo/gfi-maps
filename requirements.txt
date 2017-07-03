@@ -3,7 +3,6 @@ gspread==0.6.2
 httplib2==0.10.3
 oauth2client==4.1.0
 packaging==16.8
-pkg-resources==0.0.0
 pyasn1==0.2.3
 pyasn1-modules==0.0.8
 pyparsing==2.2.0
