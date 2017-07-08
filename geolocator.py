@@ -139,7 +139,11 @@ for i in range(len(orgs)):
         identifier = orgs[i]
 
     program_location = locs[i].strip()
-    query_results = query_location("%s,%s" % (identifier.strip(), program_location))
+
+    query = "%s, %s" % (identifier.strip(), program_location)
+    print("\nLooking up %s" % query)
+
+    query_results = query_location(query)
 
     if query_results["status"] == "OK":
         process_results(query_results)
@@ -147,6 +151,7 @@ for i in range(len(orgs)):
 
     elif query_results["status"] == "ZERO_RESULTS":
         # fall back to only the program location
+        print("Not found. Trying %s instead" % program_location)
         query_results = query_location(program_location)
         if query_results["status"] == "OK":
             process_results(query_results)
@@ -156,8 +161,7 @@ for i in range(len(orgs)):
         print(query_results["status"])
         sys.exit()
 
-    break
-    time.sleep(5)
+    time.sleep(3)
 
 if worksheet_updated:
     # write the last updated timestamp record.
