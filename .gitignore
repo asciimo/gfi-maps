@@ -1,3 +1,4 @@
 .idea
 venv
 *.swp
+client_secret.json
