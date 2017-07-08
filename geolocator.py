@@ -28,6 +28,7 @@ client = gspread.authorize(creds)
 PLACE_API_URL = "https://maps.googleapis.com/maps/api/place/textsearch/json"
 
 PLACE_API_KEY = None
+worksheet_updated = False
 
 # Arbitrary time in the far past
 last_updated_datetime = datetime.datetime(1984, 1, 24, 17, 0, 0, 0, tzinfo=datetime.timezone.utc)
@@ -139,12 +140,14 @@ for i in range(len(orgs)):
 
     if query_results["status"] == "OK":
         process_results(query_results)
+        worksheet_updated = True
 
     elif query_results["status"] == "ZERO_RESULTS":
         # fall back to only the program location
         query_results = query_location(program_location)
         if query_results["status"] == "OK":
             process_results(query_results)
+            worksheet_updated = True
 
     elif query_results["status"] == "OVER_QUERY_LIMIT":
         print(query_results["status"])
@@ -152,3 +155,5 @@ for i in range(len(orgs)):
 
     time.sleep(5)
 
+if worksheet_updated:
+    timestamp.write(sh.updated)
