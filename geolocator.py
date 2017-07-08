@@ -6,6 +6,7 @@ import sys
 import random
 import datetime
 import dateutil.parser
+from dateutil.tz import tzutc
 from oauth2client.service_account import ServiceAccountCredentials
 
 # @todo move all CONFIGURATION_VALUES into a file
@@ -43,7 +44,8 @@ except IOError as error:
 
 # load the last updated timestamp record
 try:
-    with open('updated.dat', 'r+') as timestamp:
+    with open('updated.dat', 'r') as timestamp:
+        # RFC 3339 format e.g. 2017-07-05T03:15:14.024Z
         last_updated = timestamp.read().strip()
         if last_updated:
             try:
@@ -154,7 +156,15 @@ for i in range(len(orgs)):
         print(query_results["status"])
         sys.exit()
 
+    break
     time.sleep(5)
 
 if worksheet_updated:
-    timestamp.write(sh.updated)
+    # write the last updated timestamp record.
+    # see https://stackoverflow.com/a/8556555/364050
+    now_timestamp = datetime.datetime.utcnow().isoformat("T") + "Z"
+    try:
+        with open('updated.dat', 'w') as timestamp:
+            timestamp.write(now_timestamp)
+    except IOError as error:
+        print("There was a problem writing to updated.dat: %s" % str(error))
