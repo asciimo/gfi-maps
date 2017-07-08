@@ -91,6 +91,7 @@ def jiggle(lat, lng):
 
 def process_results(results):
     print(results["results"][0]["name"])
+    # @todo formatted_address is useful, and should be added as a new column
     print(results["results"][0]["formatted_address"])
     print(results["results"][0]["place_id"])
 
