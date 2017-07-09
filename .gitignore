@@ -3,3 +3,4 @@ venv
 *.swp
 client_secret.json
 updated.dat
+__pycache__

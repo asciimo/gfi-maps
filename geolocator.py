@@ -1,15 +1,17 @@
 import gspread
-import requests
 import time
 import json
 import sys
 import random
 import datetime
 import dateutil.parser
-from dateutil.tz import tzutc
 from oauth2client.service_account import ServiceAccountCredentials
 
-# @todo move all CONFIGURATION_VALUES into a file
+import gapi
+import update_file
+
+
+# @todo move all sheet CONFIGURATION_VALUES into a file
 DOCUMENT_TITLE = "Copy of Global Map of Accelerators and Incubators.xlsx"
 
 ACCELERATOR_WORKSHEET = "Accelerators"
@@ -20,19 +22,17 @@ ACCELERATOR_LOCATION_COLUMN = 6
 ACCELERATOR_GEOLOCATION_COLUMN = 14
 ACCELERATOR_GEOLOCATION_COLUMN_TITLE = "Geo Coordinates"
 
-
 # use credentials to create a client to interact with the Google Drive API
 scope = ['https://spreadsheets.google.com/feeds']
 creds = ServiceAccountCredentials.from_json_keyfile_name('client_secret.json', scope)
 client = gspread.authorize(creds)
 
-PLACE_API_URL = "https://maps.googleapis.com/maps/api/place/textsearch/json"
 
 PLACE_API_KEY = None
 worksheet_updated = False
 
 # Arbitrary time in the far past
-last_updated_datetime = datetime.datetime(1984, 1, 24, 17, 0, 0, 0, tzinfo=datetime.timezone.utc)
+default_datetime = datetime.datetime(1984, 1, 24, 17, 0, 0, 0, tzinfo=datetime.timezone.utc)
 
 # We're storing the Google Place API key in the gspread credentials file for convenience.
 try:
@@ -43,29 +43,20 @@ except IOError as error:
     sys.exit()
 
 # load the last updated timestamp record
-try:
-    with open('updated.dat', 'r') as timestamp:
-        # RFC 3339 format e.g. 2017-07-05T03:15:14.024Z
-        last_updated = timestamp.read().strip()
-        if last_updated:
-            try:
-                last_updated_datetime = dateutil.parser.parse(last_updated)
-            except ValueError as error:
-                print("Can't parse %s into datetime: %s" % (last_updated, str(error)))
-except IOError as error:
-    print("There was a problem reading updated.dat: %s" % str(error))
+last_updated_datetime = update_file.get_last_update(default_datetime)
 
 # Find a workbook by name and open the first sheet
 sh = client.open(DOCUMENT_TITLE)
 
 print("Got %s, last updated at %s" % (DOCUMENT_TITLE, sh.updated))
 print("Last update on record was at %s" % last_updated_datetime)
-sheet_updated = dateutil.parser.parse(sh.updated)
-if sheet_updated <= last_updated_datetime:
+sheet_updated_datetime = dateutil.parser.parse(sh.updated)
+if sheet_updated_datetime <= last_updated_datetime:
     print("Nothing to do.")
     sys.exit()
 
 # @todo each worksheet type needs its own configuration
+# @todo move each worksheet into its own module
 accelerators = sh.worksheet(ACCELERATOR_WORKSHEET)
 orgs = accelerators.col_values(ACCELERATOR_ORG_COLUMN)[1:]
 progs = accelerators.col_values(ACCELERATOR_PROGRAM_COLUMN)[1:]
@@ -92,6 +83,7 @@ def jiggle(lat, lng):
     return new_lat, new_lng
 
 
+# @todo this should be get_lat_lng(results) instead, and the caller should subsequently call jiggle() and update the cell.
 def process_results(results):
     print(results["results"][0]["name"])
     # @todo formatted_address is useful, and should be added as a new column
@@ -111,16 +103,6 @@ def process_results(results):
     # write to the row offset +2; one because rows are 1-indexed, and one because the title is row 1
     accelerators.update_cell(i+2, ACCELERATOR_GEOLOCATION_COLUMN, "%f, %f" % (lat, lng))
     all_latlngs.append((lat, lng))
-
-
-def query_location(query):
-    payload = {
-        'key': PLACE_API_KEY,
-        'query': query
-    }
-    request = requests.get(PLACE_API_URL, params=payload)
-    return request.json()
-
 
 for i in range(len(orgs)):
 
@@ -143,7 +125,7 @@ for i in range(len(orgs)):
     query = "%s, %s" % (identifier.strip(), program_location)
     print("\nLooking up %s" % query)
 
-    query_results = query_location(query)
+    query_results = gapi.query_location(PLACE_API_KEY, query)
 
     if query_results["status"] == "OK":
         process_results(query_results)
@@ -152,7 +134,7 @@ for i in range(len(orgs)):
     elif query_results["status"] == "ZERO_RESULTS":
         # fall back to only the program location
         print("Not found. Trying %s instead" % program_location)
-        query_results = query_location(program_location)
+        query_results = gapi.query_location(PLACE_API_KEY, program_location)
         if query_results["status"] == "OK":
             process_results(query_results)
             worksheet_updated = True
@@ -164,11 +146,6 @@ for i in range(len(orgs)):
     time.sleep(3)
 
 if worksheet_updated:
-    # write the last updated timestamp record.
     # see https://stackoverflow.com/a/8556555/364050
     now_timestamp = datetime.datetime.utcnow().isoformat("T") + "Z"
-    try:
-        with open('updated.dat', 'w') as timestamp:
-            timestamp.write(now_timestamp)
-    except IOError as error:
-        print("There was a problem writing to updated.dat: %s" % str(error))
+    update_file.set_last_update(now_timestamp)
