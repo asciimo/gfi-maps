@@ -2,7 +2,6 @@ import gspread
 import time
 import json
 import sys
-import random
 import datetime
 import dateutil.parser
 from oauth2client.service_account import ServiceAccountCredentials
@@ -77,12 +76,6 @@ if not geocoord_title:
 all_latlngs = []
 
 
-def jiggle(lat, lng):
-    new_lat = lat + round(random.uniform(.01, -.01), 5)
-    new_lng = lng + round(random.uniform(.01, -.01), 5)
-    return new_lat, new_lng
-
-
 # @todo this should be get_lat_lng(results) instead, and the caller should subsequently call jiggle() and update the cell.
 def process_results(results):
     print(results["results"][0]["name"])
@@ -97,7 +90,7 @@ def process_results(results):
 
     if (lat, lng) in all_latlngs:
         print("We already have (%f, %f). Jiggling..." % (lat, lng))
-        (lat, lng) = jiggle(lat, lng)
+        (lat, lng) = gapi.jiggle(lat, lng)
         print("... Now it's (%f, %f)" % (lat, lng))
 
     # write to the row offset +2; one because rows are 1-indexed, and one because the title is row 1
