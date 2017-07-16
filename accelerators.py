@@ -1,108 +1,127 @@
+import logging
 import gapi
+import sys
+
+logger = logging.getLogger()
 
 WORKSHEET_NAME = "Accelerators"
+INDEX_COLUMN = 3  # Program
 ORG_COLUMN = 1
-PROGRAM_COLUMN = 3
 CITY_COLUMN = 9
 STATE_COLUMN = 8
-COUNTRY_COLUMN = 17
+COUNTRY_COLUMN = 7
 
-GEOLOCATION_COLUMN = 14
+GEOLOCATION_COLUMN = 17
 GEOLOCATION_COLUMN_TITLE = "Geo Coordinates"
 
-global_latlngs = []
-my_worksheet = None
+PLACE_API_KEY = None
+
+latlngs = []
+
+worksheet = None
+updated = False
+
+
+def get_all_lat_lngs():
+    return latlngs
+
+
+def has_location_values(record):
+    return record[CITY_COLUMN] != "" and record[STATE_COLUMN] != "" and record[COUNTRY_COLUMN] != ""
+
 
 def get_location(record):
-    return "%s, %s, %s" % (record[CITY_COLUMN], record[STATE_COLUMN], record[COUNTRY_COLUMN])
-
-def set_geolocations(global_latlngs, worksheet):
-    latlngs = global_latlngs
-    my_worksheet = worksheet
-
-accelerators = sh.worksheet(accelerators.WORKSHEET_NAME)
-orgs = accelerators.col_values(accelerators.ORG_COLUMN)[1:]
-progs = accelerators.col_values(accelerators.PROGRAM_COLUMN)[1:]
-locs = accelerators.col_values(accelerators.get_location())[1:]
+    return ",".join((record[CITY_COLUMN], record[STATE_COLUMN], record[COUNTRY_COLUMN]))
 
 
-# Does the worksheet already have a geo coordinates column?
-geocoord_title = accelerators.col_values(accelerators.GEOLOACTION_COLUMN)[0]
-
-if geocoord_title and (geocoord_title != ACCELERATOR_GEOLOCATION_COLUMN_TITLE):
-    print("Found '%s' where '%s' is supposed to be. Quitting." % (geocoord_title, ACCELERATOR_GEOLOCATION_COLUMN_TITLE))
-    sys.exit()
-
-if not geocoord_title:
-    accelerators.update_cell(1, ACCELERATOR_GEOLOCATION_COLUMN, ACCELERATOR_GEOLOCATION_COLUMN_TITLE)
-    print("Created '%s' column" % ACCELERATOR_GEOLOCATION_COLUMN_TITLE)
-
-
-# @todo this should be get_lat_lng(results) instead, and the caller should subsequently call jiggle() and update the cell.
-def process_results(results):
-    print(results["results"][0]["name"])
-    # @todo formatted_address is useful, and should be added as a new column
-    print(results["results"][0]["formatted_address"])
-    print(results["results"][0]["place_id"])
+def get_lat_lng(results):
 
     lat = results["results"][0]["geometry"]["location"]["lat"]
     lng = results["results"][0]["geometry"]["location"]["lng"]
 
-    print("%f, %f" % (lat, lng))
+    logger.debug("%f, %f" % (lat, lng))
 
-    if (lat, lng) in global_latlngs:
-        print("We already have (%f, %f). Jiggling..." % (lat, lng))
-        (lat, lng) = gapi.jiggle(lat, lng)
-        print("... Now it's (%f, %f)" % (lat, lng))
+    return lat, lng
 
-    # write to the row offset +2; one because rows are 1-indexed, and one because the title is row 1
-    accelerators.update_cell(i+2, ACCELERATOR_GEOLOCATION_COLUMN, "%f, %f" % (lat, lng))
-    global_latlngs.append((lat, lng))
 
-for i in range(len(orgs)):
+def set_geolocation_column():
+    # Does the worksheet already have a geo coordinates column?
+    geocoord_title = worksheet.col_values(GEOLOCATION_COLUMN)[0]
 
-    identifier = None
-
-    # The place identifier in order of preference: organization, program, program location
-    if 'Virtual' in locs[i] or locs[i] == '':
-        continue
-    elif orgs[i] == 'N/A' or orgs[i] == '':
-        # Try to use the program name instead. (There's always a program.)
-        if progs[i] == '':
-            continue
-        else:
-            identifier = progs[i]
-    else:
-        identifier = orgs[i]
-
-    program_location = locs[i].strip()
-
-    query = "%s, %s" % (identifier.strip(), program_location)
-    print("\nLooking up %s" % query)
-
-    query_results = gapi.query_location(PLACE_API_KEY, query)
-
-    if query_results["status"] == "OK":
-        process_results(query_results)
-        worksheet_updated = True
-
-    elif query_results["status"] == "ZERO_RESULTS":
-        # fall back to only the program location
-        print("Not found. Trying %s instead" % program_location)
-        query_results = gapi.query_location(PLACE_API_KEY, program_location)
-        if query_results["status"] == "OK":
-            process_results(query_results)
-            worksheet_updated = True
-
-    elif query_results["status"] == "OVER_QUERY_LIMIT":
-        print(query_results["status"])
+    if geocoord_title and (geocoord_title != GEOLOCATION_COLUMN_TITLE):
+        logger.debug("Found '%s' where '%s' is supposed to be. Quitting." % (geocoord_title, GEOLOCATION_COLUMN_TITLE))
         sys.exit()
 
-    time.sleep(3)
+    if not geocoord_title:
+        worksheet.update_cell(1, GEOLOCATION_COLUMN, GEOLOCATION_COLUMN_TITLE)
+        logger.debug("Created '%s' column" % GEOLOCATION_COLUMN_TITLE)
 
 
+def get_location_identifier(record):
+    # @todo each module gets one of these, as the module knows the worksheet format
+    if record[ORG_COLUMN] != 'N/A' and record[ORG_COLUMN] != '':
+        return record[ORG_COLUMN]
+
+    return record[INDEX_COLUMN]
 
 
+def process(sheet):
 
-    return latlngs
+    logger.debug("Loading worksheet %s" % WORKSHEET_NAME)
+    worksheet = sheet.worksheet(WORKSHEET_NAME)
+
+    indexes = worksheet.col_values(INDEX_COLUMN)[1:]
+
+    if len(indexes) < 1:
+        logger.debug("%s: index column %d appears to be empty." % (WORKSHEET_NAME, INDEX_COLUMN))
+        return False
+
+    set_geolocation_column()
+
+    # @todo this iteration is VERBOSE. And probbly generic. Abstract it.
+    for i in range(1, len(indexes)):
+
+        record = worksheet.row_values(i)
+
+        if not has_location_values(record):
+            continue
+
+        identifier = get_location_identifier(record)
+        location = get_location(record)
+
+        query = "%s, %s" % (identifier.strip(), location)
+        logger.debug("Querying for %s..." % query)
+
+        results = gapi.query_location(PLACE_API_KEY, query)
+
+        # @todo DRY
+        if results["status"] == "OK":
+            logger.debug(results["results"][0]["name"])
+            logger.debug(results["results"][0]["formatted_address"])
+            logger.debug(results["results"][0]["place_id"])
+
+            (lat, lng) = get_lat_lng(results)
+
+            # write to the row offset +2; one because rows are 1-indexed, and one because the title is row 1
+            worksheet.update_cell(i+2, GEOLOCATION_COLUMN, "%f, %f" % (lat, lng))
+            latlngs.append((lat, lng))
+            updated = True
+
+        elif results["status"] == "ZERO_RESULTS":
+            # fall back to only the program location
+            logger.debug("Not found. Trying %s instead" % location)
+            results = gapi.query_location(PLACE_API_KEY, location)
+            if results["status"] == "OK":
+                (lat, lng) = get_lat_lng(results)
+                if (lat, lng) in latlngs:
+                    logger.debug("We already have (%f, %f). Jiggling..." % (lat, lng))
+                    (lat, lng) = gapi.jiggle(lat, lng)
+                    logger.debug("... Now it's (%f, %f)" % (lat, lng))
+                updated = True
+
+        elif results["status"] == "OVER_QUERY_LIMIT":
+            logger.debug("%s. Quitting." % results["status"])
+            sys.exit()
+
+    return updated
 
