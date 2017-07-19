@@ -7,14 +7,14 @@ import random
 PLACE_API_URL = "https://maps.googleapis.com/maps/api/place/textsearch/json"
 
 
-def query_location(key, query):
+def query_location(google_places_api_key, query):
     """
     :param key: Google Places API key
     :param query: The location to search e.g. "Some Company, Trenton, NJ, United States"
     :return:
     """
     payload = {
-        'key': key,
+        'key': google_places_api_key,
         'query': query
     }
     request = requests.get(PLACE_API_URL, params=payload)

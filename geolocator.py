@@ -35,21 +35,22 @@ scope = ['https://spreadsheets.google.com/feeds']
 credentials = ServiceAccountCredentials.from_json_keyfile_name('client_secret.json', scope)
 client = gspread.authorize(credentials)
 
-PLACE_API_KEY = None
-worksheet_updated = False
-global_latlngs = []
 
 # Arbitrary time in the far past
 default_datetime = datetime.datetime(1984, 1, 24, 17, 0, 0, 0, tzinfo=datetime.timezone.utc)
 
 
 def main():
+    google_places_api_key = None
+    all_lat_lngs = []
+    worksheet_updated = False
+
     # We're storing the Google Place API key in the gspread credentials file for convenience.
     try:
         with open('client_secret.json') as config:
-            PLACE_API_KEY = json.load(config)["api_key"]
+            google_places_api_key = json.load(config)["google_places_api_key"]
     except IOError as error:
-        print("There was a problem reading client_secret.json: %s" % str(error))
+        logger.error("There was a problem reading client_secret.json: %s" % str(error))
         sys.exit()
 
     # load the last updated timestamp record
@@ -58,11 +59,11 @@ def main():
     # Find a workbook by name and open the first sheet
     sheet = client.open(DOCUMENT_TITLE)
 
-    print("Got %s, last updated at %s" % (DOCUMENT_TITLE, sheet.updated))
-    print("Last update on record was at %s" % last_updated_datetime)
+    logger.debug("Got %s, last updated at %s" % (DOCUMENT_TITLE, sheet.updated))
+    logger.debug("Last update on record was at %s" % last_updated_datetime)
     sheet_updated_datetime = dateutil.parser.parse(sheet.updated)
     if sheet_updated_datetime <= last_updated_datetime:
-        print("Nothing to do.")
+        logger.debug("Nothing to do.")
         sys.exit()
 
     # models = [accelerators, university_extension_programs, tech_incubators, pilot_plants,
@@ -74,8 +75,8 @@ def main():
 
     # Pass the Sheet object to each model to process. If a worksheet has performed an update it will return True
     for worksheet in worksheets:
-        if worksheet.process(sheet, PLACE_API_KEY):
-            global_latlngs += set(global_latlngs) - set(model.get_latlngs())
+        if worksheet.process(sheet, google_places_api_key):
+            all_lat_lngs += set(all_lat_lngs) - set(worksheet.get_lat_lngs())
             worksheet_updated = True
         time.sleep(2)
 
@@ -86,8 +87,8 @@ def main():
 
 if __name__ == '__main__':
     fileConfig('logging_config.ini')
-    now_timestamp = datetime.datetime.utcnow().isoformat("T") + "Z"
+    start_timestamp = datetime.datetime.utcnow().isoformat("T") + "Z"
     logger = logging.getLogger()
-    logger.info('Started at %s' % now_timestamp)
+    logger.info('Started at %s' % start_timestamp)
     main()
 

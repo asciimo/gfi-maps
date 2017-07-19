@@ -5,24 +5,18 @@ import sys
 logger = logging.getLogger()
 
 WORKSHEET_NAME = "Accelerators"
-INDEX_COLUMN = 3  # Program
-ORG_COLUMN = 1
-CITY_COLUMN = 9
-STATE_COLUMN = 8
-COUNTRY_COLUMN = 7
 
-GEOLOCATION_COLUMN = 17
+INDEX_COLUMN = 2  # Program
+ORG_COLUMN = 0
+CITY_COLUMN = 8
+STATE_COLUMN = 7
+COUNTRY_COLUMN = 6
+
+GEOLOCATION_COLUMN = 16
 GEOLOCATION_COLUMN_TITLE = "Geo Coordinates"
 
-PLACE_API_KEY = None
 
-latlngs = []
-
-worksheet = None
-updated = False
-
-
-def get_all_lat_lngs():
+def get_lat_lngs():
     return latlngs
 
 
@@ -44,17 +38,19 @@ def get_lat_lng(results):
     return lat, lng
 
 
-def set_geolocation_column():
+def set_geolocation_column(worksheet):
     # Does the worksheet already have a geo coordinates column?
-    geocoord_title = worksheet.col_values(GEOLOCATION_COLUMN)[0]
+    geocoord_title = worksheet.col_values(GEOLOCATION_COLUMN+1)[0]
 
     if geocoord_title and (geocoord_title != GEOLOCATION_COLUMN_TITLE):
         logger.debug("Found '%s' where '%s' is supposed to be. Quitting." % (geocoord_title, GEOLOCATION_COLUMN_TITLE))
         sys.exit()
 
     if not geocoord_title:
-        worksheet.update_cell(1, GEOLOCATION_COLUMN, GEOLOCATION_COLUMN_TITLE)
+        worksheet.update_cell(1, GEOLOCATION_COLUMN+1, GEOLOCATION_COLUMN_TITLE)
         logger.debug("Created '%s' column" % GEOLOCATION_COLUMN_TITLE)
+
+    return worksheet
 
 
 def get_location_identifier(record):
@@ -65,7 +61,11 @@ def get_location_identifier(record):
     return record[INDEX_COLUMN]
 
 
-def process(sheet):
+def process(sheet, google_places_api_key):
+
+    updated = False
+
+    latlngs = []
 
     logger.debug("Loading worksheet %s" % WORKSHEET_NAME)
     worksheet = sheet.worksheet(WORKSHEET_NAME)
@@ -76,10 +76,10 @@ def process(sheet):
         logger.debug("%s: index column %d appears to be empty." % (WORKSHEET_NAME, INDEX_COLUMN))
         return False
 
-    set_geolocation_column()
+    worksheet = set_geolocation_column(worksheet)
 
-    # @todo this iteration is VERBOSE. And probbly generic. Abstract it.
-    for i in range(1, len(indexes)):
+    # @todo this iteration is VERBOSE. And probably generic. Abstract it.
+    for i in range(2, len(indexes)):  # row access is 1-indexed, and the first row is the title row
 
         record = worksheet.row_values(i)
 
@@ -92,7 +92,7 @@ def process(sheet):
         query = "%s, %s" % (identifier.strip(), location)
         logger.debug("Querying for %s..." % query)
 
-        results = gapi.query_location(PLACE_API_KEY, query)
+        results = gapi.query_location(google_places_api_key, query)
 
         # @todo DRY
         if results["status"] == "OK":
@@ -110,7 +110,7 @@ def process(sheet):
         elif results["status"] == "ZERO_RESULTS":
             # fall back to only the program location
             logger.debug("Not found. Trying %s instead" % location)
-            results = gapi.query_location(PLACE_API_KEY, location)
+            results = gapi.query_location(google_places_api_key, location)
             if results["status"] == "OK":
                 (lat, lng) = get_lat_lng(results)
                 if (lat, lng) in latlngs:
