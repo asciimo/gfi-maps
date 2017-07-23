@@ -29,6 +29,7 @@ import accelerators
 # @todo import grants
 
 DOCUMENT_TITLE = "Copy of Global Map of Accelerators and Incubators.xlsx"
+PLACES_REQUEST_DELAY = 2
 
 # use credentials to create a client to interact with the Google Drive API
 scope = ['https://spreadsheets.google.com/feeds']
@@ -42,7 +43,7 @@ default_datetime = datetime.datetime(1984, 1, 24, 17, 0, 0, 0, tzinfo=datetime.t
 
 def main():
     google_places_api_key = None
-    all_lat_lngs = []
+    lat_lngs = []
     worksheet_updated = False
 
     # We're storing the Google Place API key in the gspread credentials file for convenience.
@@ -75,10 +76,10 @@ def main():
 
     # Pass the Sheet object to each model to process. If a worksheet has performed an update it will return True
     for worksheet in worksheets:
-        if worksheet.process(sheet, google_places_api_key):
-            all_lat_lngs += set(all_lat_lngs) - set(worksheet.get_lat_lngs())
-            worksheet_updated = True
-        time.sleep(2)
+        (worksheet_updated, worksheet_lat_lngs) = worksheet.process(sheet, google_places_api_key, lat_lngs)
+        if worksheet_updated:
+            lat_lngs += set(lat_lngs) - set(worksheet_lat_lngs)
+        time.sleep(PLACES_REQUEST_DELAY)
 
     if worksheet_updated:
         # see https://stackoverflow.com/a/8556555/364050

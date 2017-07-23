@@ -16,16 +16,17 @@ GEOLOCATION_COLUMN = 16
 GEOLOCATION_COLUMN_TITLE = "Geo Coordinates"
 
 
-def get_lat_lngs():
-    return latlngs
-
-
 def has_location_values(record):
-    return record[CITY_COLUMN] != "" and record[STATE_COLUMN] != "" and record[COUNTRY_COLUMN] != ""
+    """
+    A record must at least a city,state pair or a country value.
+    :param record: Array of record values
+    :return:
+    """
+    return (record[CITY_COLUMN] != "" and record[STATE_COLUMN] != "") or record[COUNTRY_COLUMN] != ""
 
 
 def get_location(record):
-    return ",".join((record[CITY_COLUMN], record[STATE_COLUMN], record[COUNTRY_COLUMN]))
+    return ",".join(filter(None, (record[CITY_COLUMN], record[STATE_COLUMN], record[COUNTRY_COLUMN])))
 
 
 def get_lat_lng(results):
@@ -61,11 +62,25 @@ def get_location_identifier(record):
     return record[INDEX_COLUMN]
 
 
-def process(sheet, google_places_api_key):
+def update_record(worksheet, index, lat_lngs, results):
+    logger.debug(results["results"][0]["name"])
+    logger.debug(results["results"][0]["formatted_address"])
+    logger.debug(results["results"][0]["place_id"])
+
+    (lat, lng) = get_lat_lng(results)
+    if (lat, lng) in lat_lngs:
+        logger.debug("We already have (%f, %f). Jiggling..." % (lat, lng))
+        (lat, lng) = gapi.jiggle(lat, lng)
+        logger.debug("... Now it's (%f, %f)" % (lat, lng))
+
+    # write to the row offset +2; one because rows are 1-indexed, and one because the title is row 1
+    worksheet.update_cell(index, GEOLOCATION_COLUMN+1, "%f, %f" % (lat, lng))
+    return lat, lng
+
+
+def process(sheet, google_places_api_key, lat_lngs):
 
     updated = False
-
-    latlngs = []
 
     logger.debug("Loading worksheet %s" % WORKSHEET_NAME)
     worksheet = sheet.worksheet(WORKSHEET_NAME)
@@ -94,17 +109,8 @@ def process(sheet, google_places_api_key):
 
         results = gapi.query_location(google_places_api_key, query)
 
-        # @todo DRY
         if results["status"] == "OK":
-            logger.debug(results["results"][0]["name"])
-            logger.debug(results["results"][0]["formatted_address"])
-            logger.debug(results["results"][0]["place_id"])
-
-            (lat, lng) = get_lat_lng(results)
-
-            # write to the row offset +2; one because rows are 1-indexed, and one because the title is row 1
-            worksheet.update_cell(i+2, GEOLOCATION_COLUMN, "%f, %f" % (lat, lng))
-            latlngs.append((lat, lng))
+            lat_lngs.append(update_record(worksheet, i, lat_lngs, results))
             updated = True
 
         elif results["status"] == "ZERO_RESULTS":
@@ -112,16 +118,12 @@ def process(sheet, google_places_api_key):
             logger.debug("Not found. Trying %s instead" % location)
             results = gapi.query_location(google_places_api_key, location)
             if results["status"] == "OK":
-                (lat, lng) = get_lat_lng(results)
-                if (lat, lng) in latlngs:
-                    logger.debug("We already have (%f, %f). Jiggling..." % (lat, lng))
-                    (lat, lng) = gapi.jiggle(lat, lng)
-                    logger.debug("... Now it's (%f, %f)" % (lat, lng))
+                lat_lngs.append(update_record(worksheet, i, lat_lngs, results))
                 updated = True
 
         elif results["status"] == "OVER_QUERY_LIMIT":
             logger.debug("%s. Quitting." % results["status"])
             sys.exit()
 
-    return updated
+    return updated, lat_lngs
 
