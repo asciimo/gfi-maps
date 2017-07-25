@@ -1,14 +1,14 @@
-WORKSHEET_NAME = "Food Incubators"
-ORG_COLUMN = 1
-PROGRAM_COLUMN = 3
-CITY_COLUMN = 7
-STATE_COLUMN = 6
-COUNTRY_COLUMN = 5
-
-GEOLOCATION_COLUMN = 10
-GEOLOCATION_COLUMN_TITLE = "Geo Coordinates"
+from worksheet import Worksheet
 
 
-def get_location(record):
-    return "%s, %s, %s" % (record[CITY_COLUMN], record[STATE_COLUMN], record[COUNTRY_COLUMN])
+class FoodIncubators(Worksheet):
+
+    geolocation_column_title = "Geo Coordinates"
+    name = 'Food Incubators'
+    index_column = 2
+    org_column = 0
+    city_column = 6
+    state_column = 5
+    country_column = 4
+    geolocation_column = 9
 

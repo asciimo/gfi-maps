@@ -9,24 +9,23 @@ import time
 from oauth2client.service_account import ServiceAccountCredentials
 
 import update_file
-import accelerators
 
-# @todo import food_incubators
-# @todo import university_extension_programs
-# @todo import tech_incubators
-# @todo import pilot_plants
-# @todo import pilot_plants
-# @todo import educational_opportunities
-# @todo import vdos
-# @todo import networks_coworking
-# @todo import prizes
-# @todo import contract_research_orgs
-# @todo import conferences_expos_pitches
-# @todo import other
-# @todo import co_manufacturers
-# @todo import business_incubators
-# @todo import corp_food_incubators
-# @todo import grants
+from accelerators import Accelerators
+from food_incubators import FoodIncubators
+# from university_extension_programs import UniversityExtensionPrograms
+# from tech_incubators import TechIncubators
+# from pilot_plants import PilotPlants
+# from educational_opportunities import EducationalOpportunities
+# from vdos import Vdos
+# from networks_coworking import NetworksCoworking
+# from prizes import Prizes
+# from contract_research_orgs import ContractResearchOrgs
+# from conferences_expos_pitches import ConferencesExposPitches
+# from other import Other
+# from co_manufacturers import CoManufacturers
+# from business_incubators import BusinessIncubators
+# from corp_food_incubators import CorpFoodIncubators
+# from grants import Grants
 
 DOCUMENT_TITLE = "Copy of Global Map of Accelerators and Incubators.xlsx"
 PLACES_REQUEST_DELAY = 2
@@ -67,16 +66,13 @@ def main():
         logger.debug("Nothing to do.")
         sys.exit()
 
-    # models = [accelerators, university_extension_programs, tech_incubators, pilot_plants,
-    # pilot_plants, educational_opportunities, vdos, networks_coworking, prizes,
-    # contract_research_orgs, conferences_expos_pitches, other, co_manufacturers, business_incubators,
-    # corp_food_incubators, grants]
-
-    worksheets = [accelerators]
+    # models = [Accelerators, FoodIncubators]
+    models = [FoodIncubators]
 
     # Pass the Sheet object to each model to process. If a worksheet has performed an update it will return True
-    for worksheet in worksheets:
-        (worksheet_updated, worksheet_lat_lngs) = worksheet.process(sheet, google_places_api_key, lat_lngs)
+    for Model in models:
+        ws = Model(sheet)
+        (worksheet_updated, worksheet_lat_lngs) = ws.process(sheet, google_places_api_key, lat_lngs)
         if worksheet_updated:
             lat_lngs += set(lat_lngs) - set(worksheet_lat_lngs)
         time.sleep(PLACES_REQUEST_DELAY)
