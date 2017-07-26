@@ -88,7 +88,7 @@ class Worksheet(object):
         self.logger.debug("Loading worksheet %s" % self.name)
         self.worksheet = sheet.worksheet(self.name)
 
-        indexes = self.worksheet.col_values(self.index_column)[1:]
+        indexes = self.worksheet.col_values(self.index_column + 1)[1:]
 
         if len(indexes) < 1:
             self.logger.debug("%s: index column %d appears to be empty." % (self.name, self.index_column))
@@ -99,6 +99,10 @@ class Worksheet(object):
         for i in range(2, len(indexes)):  # row access is 1-indexed, and the first row is the title row
 
             record = self.worksheet.row_values(i)
+
+            # An empty index value signifies the end of worksheet
+            if not record[self.index_column]:
+                break
 
             if not self.has_location_values(record):
                 continue
