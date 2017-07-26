@@ -15,7 +15,7 @@ from food_incubators import FoodIncubators
 from university_extension_programs import UniversityExtensionPrograms
 from tech_incubators import TechIncubators
 from pilot_plants import PilotPlants
-# from educational_opportunities import EducationalOpportunities
+from educational_opportunities import EducationalOpportunities
 # from vdos import Vdos
 # from networks_coworking import NetworksCoworking
 # from prizes import Prizes
@@ -66,8 +66,8 @@ def main():
         logger.debug("Nothing to do.")
         sys.exit()
 
-    # models = [Accelerators, FoodIncubators, UniversityExtensionPrograms, TechIncubators]
-    models = [PilotPlants]
+    # models = [Accelerators, FoodIncubators, UniversityExtensionPrograms, TechIncubators, PilotPlants]
+    models = [EducationalOpportunities]
 
     # Pass the Sheet object to each model to process. If a worksheet has performed an update it will return True
     for Model in models:
