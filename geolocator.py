@@ -16,16 +16,16 @@ from university_extension_programs import UniversityExtensionPrograms
 from tech_incubators import TechIncubators
 from pilot_plants import PilotPlants
 from educational_opportunities import EducationalOpportunities
-# from vdos import Vdos
-# from networks_coworking import NetworksCoworking
-# from prizes import Prizes
-# from contract_research_orgs import ContractResearchOrgs
-# from conferences_expos_pitches import ConferencesExposPitches
-# from other import Other
-# from co_manufacturers import CoManufacturers
-# from business_incubators import BusinessIncubators
-# from corp_food_incubators import CorpFoodIncubators
-# from grants import Grants
+from vdos import Vdos
+from networks_coworking import NetworksCoworking
+from prizes import Prizes
+from contract_research_orgs import ContractResearchOrgs
+from conferences_expos_pitches import ConferencesExposPitches
+from other import Other
+from co_manufacturers import CoManufacturers
+from business_incubators import BusinessIncubators
+from corp_food_incubators import CorpFoodIncubators
+from grants import Grants
 
 DOCUMENT_TITLE = "Copy of Global Map of Accelerators and Incubators.xlsx"
 PLACES_REQUEST_DELAY = 2
@@ -66,8 +66,10 @@ def main():
         logger.debug("Nothing to do.")
         sys.exit()
 
-    # models = [Accelerators, FoodIncubators, UniversityExtensionPrograms, TechIncubators, PilotPlants]
-    models = [EducationalOpportunities]
+    # models = [Accelerators, FoodIncubators, UniversityExtensionPrograms, TechIncubators, PilotPlants,
+    # EducationalOpportunities, Vdos, NetworksCoworking, Prizes, ContractResearchOrgs, ConferencesExposPitches, Other,
+    # CoManufacturers, BusinessIncubators, CorpFoodIncubators, Grants]
+    models = [CoManufacturers]
 
     # Pass the Sheet object to each model to process. If a worksheet has performed an update it will return True
     for Model in models:

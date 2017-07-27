@@ -1,6 +1,7 @@
 import logging
 import gapi
 import sys
+from gspread.exceptions import WorksheetNotFound
 
 
 class Worksheet(object):
@@ -86,13 +87,18 @@ class Worksheet(object):
         updated = False
 
         self.logger.debug("Loading worksheet %s" % self.name)
-        self.worksheet = sheet.worksheet(self.name)
+
+        try:
+            self.worksheet = sheet.worksheet(self.name)
+        except WorksheetNotFound:
+            self.logger.error("Worksheet %s not found!" % self.name)
+            return updated, lat_lngs
 
         indexes = self.worksheet.col_values(self.index_column + 1)[1:]
 
         if len(indexes) < 1:
             self.logger.debug("%s: index column %d appears to be empty." % (self.name, self.index_column))
-            return False
+            return updated, lat_lngs
 
         self.set_geolocation_column()
 
