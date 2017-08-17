@@ -10,6 +10,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 
 import update_file
 
+from non_profits import NonProfits
 from accelerators import Accelerators
 from food_incubators import FoodIncubators
 from university_extension_programs import UniversityExtensionPrograms
@@ -27,7 +28,7 @@ from business_incubators import BusinessIncubators
 from corp_food_incubators import CorpFoodIncubators
 from grants import Grants
 
-DOCUMENT_TITLE = "Copy of Global Map of Accelerators and Incubators.xlsx"
+DOCUMENT_TITLE = "Global Map of Accelerators and Incubators.xlsx"
 PLACES_REQUEST_DELAY = 2
 
 # use credentials to create a client to interact with the Google Drive API
@@ -66,10 +67,9 @@ def main():
         logger.debug("Nothing to do.")
         sys.exit()
 
-    # models = [Accelerators, FoodIncubators, UniversityExtensionPrograms, TechIncubators, PilotPlants,
-    # EducationalOpportunities, Vdos, NetworksCoworking, Prizes, ContractResearchOrgs, ConferencesExposPitches, Other,
-    # CoManufacturers, BusinessIncubators, CorpFoodIncubators, Grants]
-    models = [CoManufacturers]
+    models = [NonProfits, FoodIncubators, UniversityExtensionPrograms, TechIncubators, PilotPlants,
+              EducationalOpportunities, Vdos, NetworksCoworking, Prizes, ContractResearchOrgs, ConferencesExposPitches,
+              Other, CoManufacturers, BusinessIncubators, CorpFoodIncubators, Grants]
 
     # Pass the Sheet object to each model to process. If a worksheet has performed an update it will return True
     for Model in models:

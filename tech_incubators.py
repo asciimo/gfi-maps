@@ -10,4 +10,4 @@ class TechIncubators(Worksheet):
     city_column = 8
     state_column = 7
     country_column = 6
-    geolocation_column = 16
+    geolocation_column = 12
