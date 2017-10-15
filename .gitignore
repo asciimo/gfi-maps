@@ -1,6 +1,6 @@
 .idea
 venv
 *.swp
-client_secret.json
+client_secret.*
 updated.dat
 __pycache__

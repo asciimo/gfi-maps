@@ -23,7 +23,7 @@ class Worksheet(object):
         return (record[self.city_column] != "" and record[self.state_column] != "") or record[self.country_column] != ""
 
     def get_location(self, record):
-        location_fields = (record[self.city_column], record[self.state_column], record[self.country_column])
+        location_fields = (record[self.street_column], record[self.city_column], record[self.state_column], record[self.country_column])
         return ",".join(filter(None, location_fields))
 
     def get_lat_lng(self, results):

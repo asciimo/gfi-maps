@@ -7,7 +7,8 @@ class UniversityExtensionPrograms(Worksheet):
     name = "University Extension Programs"
     index_column = 0
     org_column = 0
+    street_column = 6
     city_column = 5
     state_column = 4
     country_column = 3
-    geolocation_column = 8
+    geolocation_column = 9

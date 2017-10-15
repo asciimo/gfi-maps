@@ -7,7 +7,8 @@ class ConferencesExposPitches(Worksheet):
     name = "Conferences, Expos, Pitch Competitions"
     index_column = 0
     org_column = 0
-    city_column = 8
-    state_column = 7
-    country_column = 6
+    street_column = 8
+    city_column = 7
+    state_column = 6
+    country_column = 5
     geolocation_column = 10

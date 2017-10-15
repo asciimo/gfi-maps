@@ -7,7 +7,8 @@ class CorpFoodIncubators(Worksheet):
     name = "Corporate Food Incubators"
     index_column = 2
     org_column = 0
-    city_column = 7
-    state_column = 6
-    country_column = 5
+    street_column = 7
+    city_column = 6
+    state_column = 5
+    country_column = 4
     geolocation_column = 15
