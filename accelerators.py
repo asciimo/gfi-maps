@@ -11,4 +11,4 @@ class Accelerators(Worksheet):
     city_column = 7
     state_column = 6
     country_column = 5
-    geolocation_column = 16
+    geolocation_column = 15

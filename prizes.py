@@ -11,4 +11,4 @@ class Prizes(Worksheet):
     city_column = 7
     state_column = 6
     country_column = 5
-    geolocation_column = 12
+    geolocation_column = 13
