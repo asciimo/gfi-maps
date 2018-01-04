@@ -67,7 +67,7 @@ def main():
         logger.debug("Nothing to do.")
         sys.exit()
 
-    models = [NonProfits, FoodIncubators, UniversityExtensionPrograms, TechIncubators, PilotPlants,
+    models = [Accelerators, NonProfits, FoodIncubators, UniversityExtensionPrograms, TechIncubators, PilotPlants,
               EducationalOpportunities, Vdos, NetworksCoworking, Prizes, ContractResearchOrgs, ConferencesExposPitches,
               Other, CoManufacturers, BusinessIncubators, CorpFoodIncubators, Grants]
 
