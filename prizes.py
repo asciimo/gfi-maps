@@ -7,8 +7,8 @@ class Prizes(Worksheet):
     name = "Prizes"
     index_column = 2
     org_column = 0
-    street_column = 8
-    city_column = 7
-    state_column = 6
-    country_column = 5
+    street_column = 9
+    city_column = 8
+    state_column = 7
+    country_column = 6
     geolocation_column = 13
