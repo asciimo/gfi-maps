@@ -79,10 +79,13 @@ def main():
             lat_lngs += set(lat_lngs) - set(worksheet_lat_lngs)
         time.sleep(PLACES_REQUEST_DELAY)
 
+    logger.info('Process complete at %s' % now_timestamp)
+
     if worksheet_updated:
         # see https://stackoverflow.com/a/8556555/364050
         now_timestamp = datetime.datetime.utcnow().isoformat("T") + "Z"
         update_file.set_last_update(now_timestamp)
+        logger.info('Last update timestamp written to file.');
 
 if __name__ == '__main__':
     fileConfig('logging_config.ini')
